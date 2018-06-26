@@ -7,6 +7,8 @@ import logging
 import tempfile
 import inspect
 
+
+
 pkg_digest = hashlib.sha1(__name__.encode('utf-8'))
 
 try:
@@ -43,6 +45,7 @@ from .utils import byte_string
 
 
 log = logging.getLogger('chameleon.template')
+log.setLevel(logging.DEBUG)
 
 
 def _make_module_loader():
@@ -238,13 +241,23 @@ class BaseTemplate(object):
     def digest(self, body, names):
         class_name = type(self).__name__.encode('utf-8')
         sha = pkg_digest.copy()
+        log.debug('pkg name: %s', __name__)
+        for path in sys.path:
+            for distribution in pkg_resources.find_distributions(path):
+                if distribution.has_version():
+                    log.debug('distribution %s, version %s', distribution.project_name, distribution.version)
+        log.debug('Package digest %s', sha.hexdigest())
         sha.update(body.encode('utf-8', 'ignore'))
+        log.debug('Body digest %s', sha.hexdigest())
         sha.update(class_name)
+        log.debug('Class name %s', class_name)
+        log.debug('Class digest %s', sha.hexdigest())
         digest = sha.hexdigest()
 
         if self.filename is not BaseTemplate.filename:
             digest = os.path.splitext(self.filename)[0] + '-' + digest
 
+        log.debug('Final base: %s', digest)
         return digest
 
     def _compile(self, program, builtins):
